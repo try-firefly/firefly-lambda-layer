@@ -1,5 +1,5 @@
 A Node.js Lambda layer to assist in Open Telemetry trace instrumentation and context propagation.
-To be used in conjunction with the AWS managed Open Telemetry layer.
+To be used in conjunction with the [AWS managed Open Telemetry Layer for JavaScript](https://aws-otel.github.io/docs/getting-started/lambda/lambda-js).
 Uses a custom handler which wraps the user defined handler.
 
 ## Functionality
