@@ -1,4 +1,4 @@
-// Users must change their Runtime Handler to /opt/firefly-handler.handler (this file)
+// Users must change their Runtime Handler to /opt/nodejs/firefly-handler.handler (this file)
 const opentelemetry = require('@opentelemetry/api');
 const userFunction = require('/var/task/index.js'); // TODO: allow users to change this and the handling function
 
@@ -15,14 +15,13 @@ function addSpanToTrace(span, parentCtx) {
   span.parentSpanId = parentCtx.spanId;
 }
 
-function getMsgAttributesTraceparentValue(event) {
-  // TODO: Check for/handle multi-record events
+function tryParseTraceparent(callback) {
   let traceparent;
   try {
-    traceparent = event.Records[0].messageAttributes.traceparent.stringValue;
+    traceparent = callback();
   } catch (err) {
     if (err instanceof TypeError) {
-      return false;
+      return undefined;
     } else {
       throw err;
     }
@@ -31,11 +30,32 @@ function getMsgAttributesTraceparentValue(event) {
   return traceparent;
 }
 
+function getMsgAttributesTraceparent(event) {
+  // TODO: Check for/handle multi-record events
+  return tryParseTraceparent(() => event.Records[0].messageAttributes.traceparent.stringValue);
+}
+
+function getfireflyHeadersTraceparent(event) {
+  return tryParseTraceparent(() => event.fireflyHeaders.traceparent);
+}
+
+// Extract parent context from fireflyHeaders or messageAttributes
+function fireflyTraceparentExtractor(event) {
+  const messageAttrbiutesTraceparent = getMsgAttributesTraceparent(event);
+
+  if (messageAttrbiutesTraceparent) return messageAttrbiutesTraceparent;
+
+  const fireflyHeadersTraceparent = getfireflyHeadersTraceparent(event);
+
+  if (fireflyHeadersTraceparent) return fireflyHeadersTraceparent;
+}
+
+
 // For handling incoming SQS/SNS events:
 // If event has a messageAttributes.traceparent (true for SQS/SNS), get the stringValue and use it as replacement to span;
 // otherwise, assume instrumentation has already parsed out context via default context extractor (looks in HTTP headers) and continue
 exports.handler = async (event, context, callback) => {
-  const traceparent = getMsgAttributesTraceparentValue(event);
+  const traceparent = fireflyTraceparentExtractor(event);
 
   if (traceparent) {
     console.log('FIREFLY: Reassigning span to correct trace');
