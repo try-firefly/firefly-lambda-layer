@@ -8,8 +8,8 @@ Uses a custom handler which wraps the user defined handler.
 
 ## Instructions to build layer:
 
-In the root directory, run the following command:
+In the root directory, run the following command on Linux:
 
 ```
-zip -r firefly-layer-demo.zip ./*
+bash build.sh
 ```
