@@ -1,4 +1,4 @@
-A Lambda layer to assist in Open Telemetry trace instrumentation and context propagation.
+A Node.js Lambda layer to assist in Open Telemetry trace instrumentation and context propagation.
 To be used in conjunction with the AWS managed Open Telemetry layer.
 Uses a custom handler which wraps the user defined handler.
 
@@ -8,13 +8,40 @@ Uses a custom handler which wraps the user defined handler.
 - If need to invoke lambda, use require `/opt/nodejs/lambda-invoke.js` and use exported `invokeLambda` function. Given `params` should follow AWS SDK's format.
   - TODO: switch to require-in-the-middle implementation for aws-sdk
 
-## Instructions to build layer:
+## Instructions
 
-In the root directory, run the following command on Linux:
+1. In the root directory, run the following command on Linux: `bash build.sh`
+   - This will build the layer as a `.zip` file in the root directory.
+2. Upload the generated `firefly-layer.zip` file to AWS Lambda Layers
+   - This will make the layer available to use across your AWS Lambdas within the region
+3. Add uploaded layer to AWS Lambda that you wish to instrument
+   - This will add the contents of the `firefly-layer.zip` to the `/opt` folder within your Lambda's container, and allow the files to be accessible at runtime.
+4. Add the AWS OpenTelemetry Lambda Layer for Node.js, along with the following environment variables (under Configuration):
+   | Key | Value |
+   | ----------------------------------- | ------------------------- |
+   | AWS_LAMBDA_EXEC_WRAPPER | /opt/otel-handler |
+   | OPENTELEMETRY_COLLECTOR_CONFIG_FILE | /var/task/collector.yaml |
+   | OTEL_PROPAGATORS | tracecontext |
+   | OTEL_TRACES_SAMPLER | always_on |
+5. Enture Active Tracing is **not enabled** under Monitoring and operations tools.
+6. Add an appropriate `collector.yaml` file in your Lambda's root directory .
+7. Change the Lambda's Hander under Runtime settings to `/opt/nodejs/firefly-handler.handler`
+   - This will change the Lamda's handler to Firefly's handler, which wraps your `index.handler` (`handler` export from `index.js`) to supplement the auto-instrumentation provided AWS's OpenTelemetry Lambda Layer.
+8. **To invoke another Lambda directly while propagating context**
 
-```
-bash build.sh
-```
+   - Add `require('/opt/nodejs/lambda-invoke.js')` in your handler and use the `invokeLambda` export.
+   - `invokeLambda` takes three arguments: `region` (string corresponding to AWS region for Lambda), `params` (object following AWS SDK's required `params` format), `callback` (function). It is a wrapper for [AWS SDK's `invoke` method for Lambdas](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Lambda.html#invoke-property).
+   - For example:
+
+   ```javascript
+   const { invokeLambda } = require("/opt/nodejs/lambda-invoke.js");
+
+   exports.handler = async (event) => {
+     invokeLambda("us-east-2", params, (err, data) => {
+       // do something when invocation completes here
+     });
+   };
+   ```
 
 ## Limitations
 
