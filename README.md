@@ -46,3 +46,4 @@ Uses a custom handler which wraps the user defined handler.
 ## Limitations
 
 - Context propagation for Lambda A invoking Lambda B results in a span from Lambda B that is a sibling to the Lambda invocation span from Lambda A, not a child span (as one would expect)
+- If Lambda execution encounters an exeception, it may not emit a trace
