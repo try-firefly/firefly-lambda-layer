@@ -26,7 +26,7 @@ Uses a custom handler which wraps the user defined handler.
 5. Enture Active Tracing is **not enabled** under Monitoring and operations tools.
 6. Add an appropriate `collector.yaml` file in your Lambda's root directory .
 7. Change the Lambda's Hander under Runtime settings to `/opt/nodejs/firefly-handler.handler`
-   - This will change the Lamda's handler to Firefly's handler, which wraps your `index.handler` (`handler` export from `index.js`) to supplement the auto-instrumentation provided AWS's OpenTelemetry Lambda Layer.
+   - This will change the Lambda's handler to Firefly's handler, which wraps your `index.handler` (`handler` export from `index.js`) to supplement the auto-instrumentation provided AWS's OpenTelemetry Lambda Layer.
 8. **To invoke another Lambda directly while propagating context**
 
    - Add `require('/opt/nodejs/lambda-invoke.js')` in your handler and use the `invokeLambda` export.
